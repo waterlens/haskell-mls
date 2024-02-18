@@ -22,6 +22,9 @@ description:         Please see the README on GitHub at <https://github.com/gith
 dependencies:
 - base >= 4.7 && < 5
 - ghc-lib-parser >= 9.6.3
+- ghc-lib-parser-ex >= 9.6
+- optparse-applicative >= 0.18.1 && < 0.19
+- strict
 
 ghc-options:
 - -Wall

@@ -25,6 +25,7 @@ source-repository head
 
 library
   exposed-modules:
+      Ast
       Lib
   other-modules:
       Paths_haskell_mls
@@ -36,6 +37,9 @@ library
   build-depends:
       base >=4.7 && <5
     , ghc-lib-parser >=9.6.3
+    , ghc-lib-parser-ex >=9.6
+    , optparse-applicative >=0.18.1 && <0.19
+    , strict
   default-language: Haskell2010
 
 executable haskell-mls-exe
@@ -50,7 +54,10 @@ executable haskell-mls-exe
   build-depends:
       base >=4.7 && <5
     , ghc-lib-parser >=9.6.3
+    , ghc-lib-parser-ex >=9.6
     , haskell-mls
+    , optparse-applicative >=0.18.1 && <0.19
+    , strict
   default-language: Haskell2010
 
 test-suite haskell-mls-test
@@ -66,5 +73,8 @@ test-suite haskell-mls-test
   build-depends:
       base >=4.7 && <5
     , ghc-lib-parser >=9.6.3
+    , ghc-lib-parser-ex >=9.6
     , haskell-mls
+    , optparse-applicative >=0.18.1 && <0.19
+    , strict
   default-language: Haskell2010
