@@ -1,8 +1,8 @@
 import System.Environment
 
 main = do
-	[arg] <- getArgs
-	print $ nsoln $ read arg
+   [arg] <- getArgs
+   print $ nsoln $ read arg
 
 nsoln nq = length (gen nq)
  where

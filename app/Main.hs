@@ -1,11 +1,14 @@
-module Main (main) where
+module Main(main) where
 
-import GHC.Driver.Ppr (showSDoc)
-import GHC.Utils.Outputable (SDoc, defaultSDocContext, renderWithContext)
-import Lib (TranspileErr (..), parse, pprParsed, transpile)
+import GHC
+import GHC.Driver.Monad (liftIO)
+import GHC.Driver.Phases (Phase (..))
+import GHC.Paths (libdir)
+import GHC.Types.SourceFile (HscSource (..))
+import GHC.Utils.Outputable (SDoc, defaultSDocContext, ppr, renderWithContext)
 import qualified Options.Applicative as OA
-import qualified System.IO as IO
-import qualified System.IO.Strict as SIO
+import GHC.Core.Ppr (pprCoreBindings)
+import GHC.Plugins (ModGuts(mg_binds))
 
 newtype TranspilerArgs = TranspilerArgs
   { files :: [FilePath]
@@ -24,29 +27,36 @@ parseTranspilerArgs =
 parserInfo :: OA.ParserInfo TranspilerArgs
 parserInfo = OA.info (OA.helper <*> parseTranspilerArgs) OA.fullDesc
 
-readUTF8File :: FilePath -> IO String
-readUTF8File fp =
-  IO.withFile fp IO.ReadMode $ \h -> do
-    IO.hSetEncoding h IO.utf8
-    SIO.hGetContents h
-
 render :: SDoc -> String
 render = renderWithContext defaultSDocContext
 
 process :: FilePath -> IO ()
 process path = do
-  content <- readUTF8File path
-  let mm = parse content
-  case mm of
-    Left (ParseErr e) -> do
-      putStr "Unable to parse haskell file: "
-      putStrLn $ render e
-    Left (TransformErr e) -> do
-      putStr "Unable to transpile haskell file: "
-      putStrLn e
-    Right m -> do
-      _ <- transpile m
-      return ()
+  runGhc (Just libdir) $ do
+    dflags <- getSessionDynFlags
+    setSessionDynFlags dflags
+    let uid = homeUnitId_ dflags
+    addTarget
+      Target
+        { targetId = TargetFile path (Just $ Hsc HsSrcFile),
+          targetAllowObjCode = False,
+          targetUnitId = uid,
+          targetContents = Nothing
+        }
+    _ <- load LoadAllTargets
+    modSum <- getModSummary (mkModuleName "Main")
+    p <- parseModule modSum
+    t <- typecheckModule p
+    d <- desugarModule t
+    let cm = mg_binds $ coreModule d
+    liftIO . putStrLn . render . ppr $ cm
+
+process2 :: FilePath -> IO ()
+process2 path = do
+  runGhc (Just libdir) $ do
+    cm <- compileToCoreModule path
+    let cp = cm_binds cm
+    liftIO . putStrLn . render . pprCoreBindings $ cp
 
 main :: IO ()
 main = do
